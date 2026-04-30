@@ -1,5 +1,5 @@
 const API_BASE = '/api';
-const API_KEY = window.__API_KEY__ || '';
+const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 async function request(endpoint, options = {}) {
   const response = await fetch(`${API_BASE}${endpoint}`, {
