@@ -1,34 +1,40 @@
-import { getSession, sendMessage } from './whatsapp.js';
+import { sendMessage } from './cli-spawn.js';
 import { getPendingMessages, updateMessageStatus } from './db.js';
 
-const POLL_INTERVAL = 30000;
+const POLL_INTERVAL = process.env.SCHEDULER_INTERVAL || 30000;
 
 async function processMessages() {
   const pending = getPendingMessages();
   
+  if (pending.length === 0) {
+    console.log('No pending messages');
+    return;
+  }
+  
+  console.log(`Processing ${pending.length} pending messages`);
+  
   for (const msg of pending) {
-    const session = getSession(msg.session_id);
+    console.log(`Sending message ${msg.id} to ${msg.contact_name}`);
     
-    if (!session || !session.connected) {
-      updateMessageStatus(msg.id, 'failed', 'Session not connected');
-      continue;
-    }
-
     try {
-      await sendMessage(msg.session_id, msg.chat_jid, msg.content);
-      updateMessageStatus(msg.id, 'sent');
-      console.log(`Message ${msg.id} sent to ${msg.chat_name}`);
+      const result = await sendMessage(msg.contact_jid, msg.content);
+      
+      if (result.success) {
+        updateMessageStatus(msg.id, 'sent');
+        console.log(`Message ${msg.id} sent successfully`);
+      } else {
+        console.log(`Message ${msg.id} failed: ${result.error} (will retry)`);
+      }
     } catch (error) {
-      updateMessageStatus(msg.id, 'failed', error.message);
-      console.error(`Failed to send message ${msg.id}:`, error.message);
+      console.error(`Message ${msg.id} error: ${error.message} (will retry)`);
     }
   }
 }
 
 function startScheduler() {
-  console.log('Message scheduler started (polling every 30s)');
+  console.log(`Scheduler started (polling every ${POLL_INTERVAL/1000}s)`);
   processMessages();
   setInterval(processMessages, POLL_INTERVAL);
 }
 
-export { startScheduler, processMessages };
+startScheduler();

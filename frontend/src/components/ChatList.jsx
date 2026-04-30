@@ -1,28 +1,25 @@
-function ChatList({ chats, loading, selectedChat, onSelect }) {
+function ChatList({ contacts, loading, selectedContact, onSelect }) {
   if (loading) {
     return <div className="loading"><div className="spinner"></div></div>;
   }
 
-  if (chats.length === 0) {
-    return <p className="empty-state">No recent chats found</p>;
+  if (contacts.length === 0) {
+    return <p className="empty-state">No contacts. Click "Refresh Contacts" to load from WhatsApp.</p>;
   }
 
   return (
     <ul className="chat-list">
-      {chats.map((chat) => (
+      {contacts.map((contact) => (
         <li
-          key={chat.id}
-          className={`chat-item ${selectedChat?.id === chat.id ? 'selected' : ''}`}
-          onClick={() => onSelect(chat)}
+          key={contact.id}
+          className={`chat-item ${selectedContact?.id === contact.id ? 'selected' : ''}`}
+          onClick={() => onSelect(contact)}
         >
           <div className="chat-avatar">
-            {chat.isGroup ? '👥' : '👤'}
+            {contact.type === 'group' ? '👥' : '👤'}
           </div>
           <div className="chat-info">
-            <div className="chat-name">{chat.name}</div>
-            {chat.lastMessage && (
-              <div className="chat-preview">{chat.lastMessage.slice(0, 30)}...</div>
-            )}
+            <div className="chat-name">{contact.name}</div>
           </div>
         </li>
       ))}

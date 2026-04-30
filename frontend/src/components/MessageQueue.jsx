@@ -1,7 +1,7 @@
 function MessageQueue({ messages, loading, onCancel }) {
   const pending = messages.filter(m => m.status === 'pending');
   const sent = messages.filter(m => m.status === 'sent').slice(0, 10);
-  const failed = messages.filter(m => m.status === 'failed');
+  const cancelled = messages.filter(m => m.status === 'cancelled');
 
   if (loading) {
     return (
@@ -30,7 +30,7 @@ function MessageQueue({ messages, loading, onCancel }) {
       <div key={msg.id} className={`queue-item ${msg.status}`}>
         <div className="queue-item-info">
           <div className="queue-item-to">
-            {msg.is_group ? '👥' : '👤'} {msg.chat_name}
+            {msg.contact_name}
           </div>
           <div className="queue-item-content">
             {msg.content.length > 50 ? msg.content.slice(0, 50) + '...' : msg.content}
@@ -67,10 +67,10 @@ function MessageQueue({ messages, loading, onCancel }) {
         </div>
       )}
 
-      {failed.length > 0 && (
+      {cancelled.length > 0 && (
         <div className="queue-group">
-          <h3>Failed</h3>
-          {failed.map(msg => renderMessage(msg))}
+          <h3>Cancelled</h3>
+          {cancelled.map(msg => renderMessage(msg))}
         </div>
       )}
 

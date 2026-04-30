@@ -1,34 +1,36 @@
 import { useState, useEffect } from 'react';
-import { getChats, getMessages, scheduleMessage, cancelMessage, logout } from '../api';
+import { getContacts, refreshContacts, getMessages, scheduleMessage, cancelMessage, sendPending } from '../api';
 import ChatList from './ChatList';
 import ScheduleForm from './ScheduleForm';
 import MessageQueue from './MessageQueue';
 
-function Dashboard({ userPhone, onLogout }) {
-  const [chats, setChats] = useState([]);
+function Dashboard() {
+  const [contacts, setContacts] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [selectedChat, setSelectedChat] = useState(null);
-  const [loadingChats, setLoadingChats] = useState(true);
+  const [selectedContact, setSelectedContact] = useState(null);
+  const [loadingContacts, setLoadingContacts] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadChats();
+    loadContacts();
     loadMessages();
     const interval = setInterval(loadMessages, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  async function loadChats() {
+  async function loadContacts() {
     try {
-      setLoadingChats(true);
-      const data = await getChats();
-      setChats(data);
+      setLoadingContacts(true);
+      const data = await getContacts();
+      setContacts(data.contacts || []);
       setError(null);
     } catch (err) {
-      setError('Failed to load chats: ' + err.message);
+      setError('Failed to load contacts: ' + err.message);
     } finally {
-      setLoadingChats(false);
+      setLoadingContacts(false);
     }
   }
 
@@ -36,7 +38,7 @@ function Dashboard({ userPhone, onLogout }) {
     try {
       setLoadingMessages(true);
       const data = await getMessages();
-      setMessages(data);
+      setMessages(data.messages || []);
     } catch (err) {
       console.error('Failed to load messages:', err);
     } finally {
@@ -44,28 +46,72 @@ function Dashboard({ userPhone, onLogout }) {
     }
   }
 
-  async function handleSchedule(chat, content, scheduledFor) {
-    await scheduleMessage(chat.id, chat.name, chat.isGroup, content, scheduledFor);
-    await loadMessages();
+  async function handleRefreshContacts() {
+    try {
+      setRefreshing(true);
+      setError(null);
+      const data = await refreshContacts();
+      setContacts(data.contacts || []);
+    } catch (err) {
+      setError('Failed to refresh contacts: ' + err.message);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  async function handleSchedule(contact, content, scheduledFor) {
+    try {
+      await scheduleMessage(contact.jid, contact.name, content, scheduledFor);
+      await loadMessages();
+    } catch (err) {
+      setError('Failed to schedule: ' + err.message);
+    }
   }
 
   async function handleCancel(id) {
-    await cancelMessage(id);
-    await loadMessages();
+    try {
+      await cancelMessage(id);
+      await loadMessages();
+    } catch (err) {
+      setError('Failed to cancel: ' + err.message);
+    }
   }
 
-  async function handleLogout() {
-    await logout();
-    onLogout();
+  async function handleSendPending() {
+    try {
+      setSending(true);
+      setError(null);
+      const result = await sendPending();
+      await loadMessages();
+      if (result.results && result.results.some(r => r.status === 'pending')) {
+        setError('Some messages failed to send (will retry)');
+      }
+    } catch (err) {
+      setError('Failed to send: ' + err.message);
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
     <div className="dashboard">
       <header className="header">
-        <h1>📱 WhatsApp Scheduler</h1>
+        <h1>WhatsApp Scheduler</h1>
         <div className="header-right">
-          <span className="user-phone">{userPhone}</span>
-          <button className="btn-logout" onClick={handleLogout}>Logout</button>
+          <button 
+            className="btn-secondary" 
+            onClick={handleRefreshContacts} 
+            disabled={refreshing}
+          >
+            {refreshing ? 'Refreshing...' : 'Refresh Contacts'}
+          </button>
+          <button 
+            className="btn-primary" 
+            onClick={handleSendPending} 
+            disabled={sending}
+          >
+            {sending ? 'Sending...' : 'Send Pending Now'}
+          </button>
         </div>
       </header>
 
@@ -73,18 +119,18 @@ function Dashboard({ userPhone, onLogout }) {
 
       <div className="main-content">
         <aside className="sidebar">
-          <h2>Recent Chats</h2>
+          <h2>Contacts</h2>
           <ChatList
-            chats={chats}
-            loading={loadingChats}
-            selectedChat={selectedChat}
-            onSelect={setSelectedChat}
+            contacts={contacts}
+            loading={loadingContacts}
+            selectedContact={selectedContact}
+            onSelect={setSelectedContact}
           />
         </aside>
 
         <main className="content">
           <ScheduleForm
-            selectedChat={selectedChat}
+            selectedContact={selectedContact}
             onSchedule={handleSchedule}
           />
         </main>
