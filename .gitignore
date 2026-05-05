@@ -1,7 +1,10 @@
 node_modules/
 backend/sessions/
 backend/data.db
+backend/logs/
+frontend/logs/
 frontend/dist/
 .env
 .DS_Store
 *.log
+*.pid
