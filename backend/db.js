@@ -84,7 +84,7 @@ export function getPendingMessages() {
   return db.prepare(`
     SELECT * FROM messages 
     WHERE status = 'pending' 
-    AND datetime(scheduled_for) <= datetime('now', 'localtime')
+    AND datetime(scheduled_for) <= datetime('now')
     ORDER BY scheduled_for ASC
   `).all();
 }
