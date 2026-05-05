@@ -4,7 +4,7 @@ import ChatList from './ChatList';
 import ScheduleForm from './ScheduleForm';
 import MessageQueue from './MessageQueue';
 
-function Dashboard() {
+function Dashboard({ apiKey, onLogout }) {
   const [contacts, setContacts] = useState([]);
   const [messages, setMessages] = useState([]);
   const [selectedContact, setSelectedContact] = useState(null);
@@ -19,12 +19,12 @@ function Dashboard() {
     loadMessages();
     const interval = setInterval(loadMessages, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [apiKey]);
 
   async function loadContacts() {
     try {
       setLoadingContacts(true);
-      const data = await getContacts();
+      const data = await getContacts(apiKey);
       setContacts(data.contacts || []);
       setError(null);
     } catch (err) {
@@ -37,7 +37,7 @@ function Dashboard() {
   async function loadMessages() {
     try {
       setLoadingMessages(true);
-      const data = await getMessages();
+      const data = await getMessages(apiKey);
       setMessages(data.messages || []);
     } catch (err) {
       console.error('Failed to load messages:', err);
@@ -50,7 +50,7 @@ function Dashboard() {
     try {
       setRefreshing(true);
       setError(null);
-      const data = await refreshContacts();
+      const data = await refreshContacts(apiKey);
       setContacts(data.contacts || []);
     } catch (err) {
       setError('Failed to refresh contacts: ' + err.message);
@@ -61,7 +61,7 @@ function Dashboard() {
 
   async function handleSchedule(contact, content, scheduledFor) {
     try {
-      await scheduleMessage(contact.jid, contact.name, content, scheduledFor);
+      await scheduleMessage(apiKey, contact.jid, contact.name, content, scheduledFor);
       await loadMessages();
     } catch (err) {
       setError('Failed to schedule: ' + err.message);
@@ -70,7 +70,7 @@ function Dashboard() {
 
   async function handleCancel(id) {
     try {
-      await cancelMessage(id);
+      await cancelMessage(apiKey, id);
       await loadMessages();
     } catch (err) {
       setError('Failed to cancel: ' + err.message);
@@ -81,7 +81,7 @@ function Dashboard() {
     try {
       setSending(true);
       setError(null);
-      const result = await sendPending();
+      const result = await sendPending(apiKey);
       await loadMessages();
       if (result.results && result.results.some(r => r.status === 'pending')) {
         setError('Some messages failed to send (will retry)');
@@ -93,11 +93,21 @@ function Dashboard() {
     }
   }
 
+  function handleLogout() {
+    onLogout();
+  }
+
   return (
     <div className="dashboard">
       <header className="header">
         <h1>WhatsApp Scheduler</h1>
         <div className="header-right">
+          <button 
+            className="btn-logout" 
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
           <button 
             className="btn-secondary" 
             onClick={handleRefreshContacts} 

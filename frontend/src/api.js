@@ -1,12 +1,11 @@
 const API_BASE = '/api';
-const API_KEY = import.meta.env.VITE_API_KEY || '';
 
-async function request(endpoint, options = {}) {
+async function request(endpoint, apiKey, options = {}) {
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'X-API-Key': API_KEY,
+      'X-API-Key': apiKey,
       ...options.headers
     }
   });
@@ -19,21 +18,21 @@ async function request(endpoint, options = {}) {
   return response.json();
 }
 
-async function getContacts() {
-  return request('/contacts');
+async function getContacts(apiKey) {
+  return request('/contacts', apiKey);
 }
 
-async function refreshContacts() {
-  return request('/refresh', { method: 'POST' });
+async function refreshContacts(apiKey) {
+  return request('/refresh', apiKey, { method: 'POST' });
 }
 
-async function getMessages(status = null) {
+async function getMessages(apiKey, status = null) {
   const query = status ? `?status=${status}` : '';
-  return request(`/messages${query}`);
+  return request(`/messages${query}`, apiKey);
 }
 
-async function scheduleMessage(contactJid, contactName, content, scheduledFor) {
-  return request('/messages', {
+async function scheduleMessage(apiKey, contactJid, contactName, content, scheduledFor) {
+  return request('/messages', apiKey, {
     method: 'POST',
     body: JSON.stringify({
       contact_jid: contactJid,
@@ -44,12 +43,12 @@ async function scheduleMessage(contactJid, contactName, content, scheduledFor) {
   });
 }
 
-async function cancelMessage(id) {
-  return request(`/messages/${id}`, { method: 'DELETE' });
+async function cancelMessage(apiKey, id) {
+  return request(`/messages/${id}`, apiKey, { method: 'DELETE' });
 }
 
-async function sendPending() {
-  return request('/send-pending', { method: 'POST' });
+async function sendPending(apiKey) {
+  return request('/send-pending', apiKey, { method: 'POST' });
 }
 
 export {
