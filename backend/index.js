@@ -7,7 +7,8 @@ import { listContacts, sendMessage } from './cli-spawn.js';
 import { 
   getContacts, updateContacts, 
   getMessages, createMessage, deleteMessage,
-  getPendingMessages, updateMessageStatus
+  getPendingMessages, updateMessageStatus,
+  wipeAllData
 } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -97,6 +98,15 @@ app.post('/api/send-pending', requireApiKey, async (req, res) => {
   }
   
   res.json({ success: true, processed: results.length, results });
+});
+
+app.post('/api/wipe-data', requireApiKey, (req, res) => {
+  const result = wipeAllData();
+  res.json({ 
+    success: true, 
+    contacts_deleted: result.contactsDeleted,
+    messages_deleted: result.messagesDeleted
+  });
 });
 
 if (process.env.NODE_ENV === 'production') {

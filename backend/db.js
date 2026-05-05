@@ -97,4 +97,14 @@ export function updateMessageStatus(id, status, error = null) {
   stmt.run(status, sentAt, error, id);
 }
 
+export function wipeAllData() {
+  const contactsResult = db.prepare('DELETE FROM contacts').run();
+  const messagesResult = db.prepare('DELETE FROM messages').run();
+  
+  return {
+    contactsDeleted: contactsResult.changes,
+    messagesDeleted: messagesResult.changes
+  };
+}
+
 export default db;
