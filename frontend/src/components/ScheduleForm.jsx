@@ -21,7 +21,16 @@ function ScheduleForm({ selectedContact, onSchedule }) {
       return;
     }
 
-    const scheduledFor = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
+    const dateValue = scheduledDate || getDefaultDate();
+    const timeValue = scheduledTime || getDefaultTime();
+    const scheduledDateObj = new Date(`${dateValue}T${timeValue}`);
+    
+    if (isNaN(scheduledDateObj.getTime())) {
+      setError('Invalid date/time');
+      return;
+    }
+    
+    const scheduledFor = scheduledDateObj.toISOString();
     
     setSubmitting(true);
     setError(null);
