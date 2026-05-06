@@ -1,6 +1,10 @@
 function MessageQueue({ messages, loading, onCancel }) {
   const pending = messages.filter(m => m.status === 'pending');
-  const sent = messages.filter(m => m.status === 'sent').slice(0, 10);
+  const sent = messages.filter(m => m.status === 'sent').sort((a, b) => {
+    if (!a.sent_at) return 1;
+    if (!b.sent_at) return -1;
+    return new Date(b.sent_at) - new Date(a.sent_at);
+  }).slice(0, 10);
   const cancelled = messages.filter(m => m.status === 'cancelled');
 
   if (loading) {
