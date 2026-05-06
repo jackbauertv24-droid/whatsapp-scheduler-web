@@ -39,28 +39,41 @@ function cleanupOrphanedProcesses() {
   }
 }
 
+let isProcessing = false;
+
 async function processMessages() {
-  const pending = getPendingMessages();
-  
-  if (pending.length === 0) {
-    console.log('No pending messages');
+  if (isProcessing) {
+    console.log('Previous message still processing, skipping poll');
     return;
   }
   
-  const msg = pending[0];
-  console.log(`Sending message ${msg.id} to ${msg.contact_name}`);
+  isProcessing = true;
   
   try {
-    const result = await sendMessage(msg.contact_jid, msg.content);
+    const pending = getPendingMessages();
     
-    if (result.success) {
-      updateMessageStatus(msg.id, 'sent');
-      console.log(`Message ${msg.id} sent successfully`);
-    } else {
-      console.log(`Message ${msg.id} failed: ${result.error} (will retry)`);
+    if (pending.length === 0) {
+      console.log('No pending messages');
+      return;
     }
-  } catch (error) {
-    console.error(`Message ${msg.id} error: ${error.message} (will retry)`);
+    
+    const msg = pending[0];
+    console.log(`Sending message ${msg.id} to ${msg.contact_name}`);
+    
+    try {
+      const result = await sendMessage(msg.contact_jid, msg.contact_name, msg.content);
+      
+      if (result.success) {
+        updateMessageStatus(msg.id, 'sent');
+        console.log(`Message ${msg.id} sent successfully`);
+      } else {
+        console.log(`Message ${msg.id} failed: ${result.error} (will retry)`);
+      }
+    } catch (error) {
+      console.error(`Message ${msg.id} error: ${error.message} (will retry)`);
+    }
+  } finally {
+    isProcessing = false;
   }
 }
 
