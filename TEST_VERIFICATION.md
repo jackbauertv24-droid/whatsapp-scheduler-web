@@ -97,3 +97,96 @@ grep "sent successfully" backend/logs/scheduler.log
 - SingletonLock race condition prevention should prevent concurrent Chrome instances
 - isProcessing flag should prevent overlapping scheduler polls
 - Expected completion time: ~09:31 UTC (last message at 09:30 + processing time)
+
+---
+
+## Test 2 - Extended Lyric Test (3 Songs, 3 Contacts)
+
+**Test Date**: 2026-05-06
+**Test Started**: 10:15 UTC
+**Test Type**: Extended lyric ordering test with line numbers
+
+### Test Setup
+
+### Contact Assignments
+- **Being (group)**: "Let It Be" lyrics (20 lines with line numbers)
+- **+852 9777 8901 (contact)**: "Imagine" lyrics (15 lines with line numbers)
+- **+852 9290 8090 (contact)**: "Hotel California" lyrics (40 lines with line numbers)
+
+### Total Messages: 75
+
+### Timing Distribution
+
+**Let It Be (Being) - 20 messages:**
+- Start: 10:15 UTC, End: 14:00 UTC
+- Same moment: 10:15 (3 messages)
+- Close timing: 10:16-10:20 (1-min gaps)
+- Medium timing: 10:30-11:30 (15-30 min gaps)
+- Distant timing: 12:00-14:00 (15-60 min gaps)
+
+**Imagine (9777) - 15 messages:**
+- Start: 10:15 UTC, End: 13:30 UTC
+- Same moment: 10:15 (2 messages)
+- Close timing: 10:17-10:22 (1-2 min gaps)
+- Medium timing: 10:30-12:30 (15-30 min gaps)
+- Distant timing: 13:00-13:30 (30 min gaps)
+
+**Hotel California (92908090) - 40 messages:**
+- Start: 10:15 UTC, End: 16:00 UTC
+- Same moment: 10:15 (3 messages)
+- Close timing: 10:16-10:22 (1-min gaps)
+- Medium timing: 10:30-11:30 (5-10 min gaps)
+- Distant timing: 11:45-16:00 (15-30 min gaps)
+
+### Test Scenarios
+
+1. **Same moment timing**: 8 messages at 10:15:00 UTC across 3 contacts
+2. **Close timing**: Messages 1-2 minutes apart (tests rapid sequential processing)
+3. **Medium timing**: Messages 5-10 minutes apart (normal scheduling)
+4. **Distant timing**: Messages 15-30 minutes apart (long-running test)
+5. **Extended duration**: ~6 hours (10:15-16:00 UTC) - tests scheduler stability
+6. **Line numbers**: Prevents confusion from repeated lyrics (e.g., "Let it be, let it be" appears 4+ times with different line numbers)
+
+### Verification Commands
+
+```bash
+# Check progress
+sqlite3 backend/data.db "SELECT contact_name, COUNT(*) as total, SUM(CASE WHEN status='sent' THEN 1 ELSE 0 END) as sent, SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending FROM messages WHERE scheduled_for >= '2026-05-06T10:15:00.000Z' GROUP BY contact_name"
+
+# Check ordering per contact
+sqlite3 backend/data.db "SELECT sent_at, content FROM messages WHERE contact_name='Being' AND scheduled_for >= '2026-05-06T10:15:00.000Z' ORDER BY sent_at"
+sqlite3 backend/data.db "SELECT sent_at, content FROM messages WHERE contact_name='+852 9777 8901' AND scheduled_for >= '2026-05-06T10:15:00.000Z' ORDER BY sent_at"
+sqlite3 backend/data.db "SELECT sent_at, content FROM messages WHERE contact_name='+852 9290 8090' AND scheduled_for >= '2026-05-06T10:15:00.000Z' ORDER BY sent_at"
+
+# Check scheduler logs
+./check-logs.sh
+```
+
+### Expected Results
+
+- [ ] All 75 messages have status = 'sent' by 16:05 UTC
+- [ ] All sent_at timestamps are after scheduled_for
+- [ ] Line numbers appear in correct sequence (01→02→03→...→40)
+- [ ] No cross-contamination between contacts
+- [ ] No dropped messages
+- [ ] Scheduler handles 6-hour test duration without errors
+- [ ] Race condition prevention works for 8 simultaneous messages at 10:15 UTC
+
+### Actual Results
+
+```
+[PASTE RESULTS HERE - verify after 16:05 UTC]
+```
+
+### Issues Found
+
+```
+[DOCUMENT ANY ISSUES HERE]
+```
+
+### Analysis Notes
+
+- Test designed to stress scheduler with larger dataset (75 vs 20 messages)
+- Extended duration tests long-running stability
+- Line numbers added to prevent ordering confusion from repeated lyrics
+- New contact (92908090) tests multi-contact handling beyond 2 contacts
