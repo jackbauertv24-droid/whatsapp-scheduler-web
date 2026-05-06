@@ -85,7 +85,7 @@ app.post('/api/send-pending', requireApiKey, async (req, res) => {
   
   for (const msg of pending) {
     try {
-      const result = await sendMessage(msg.contact_jid, msg.content);
+      const result = await sendMessage(msg.contact_jid, msg.contact_name, msg.content);
       if (result.success) {
         updateMessageStatus(msg.id, 'sent');
         results.push({ id: msg.id, status: 'sent' });

@@ -38,8 +38,8 @@ async function listContacts() {
   return result.chats || [];
 }
 
-async function sendMessage(to, content) {
-  return spawnCli(['send', `--to=${to}`, `--message=${content}`, '--timeout=15']);
+async function sendMessage(to, name, content) {
+  return spawnCli(['send', `--to=${to}`, `--name=${name}`, `--message=${content}`, '--timeout=15']);
 }
 
 async function checkSession() {
